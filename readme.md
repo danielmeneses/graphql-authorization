@@ -191,9 +191,9 @@ The $peration can be either `$eq` (equal to), `$neq` (not equal to), `$gt` (grea
 
 ### Next steps
 
-* Build a middleware. I've found one that works ok ([graphql-middleware](https://github.com/graphcool/graphql-middleware)), but remember the middleware cannot apply to all resolvers, just apply it to top level resolvers otherwise you end up validating the same conditions multiple times.
+* Build a middleware. I've found one that works ok ([graphql-middleware](https://github.com/graphcool/graphql-middleware)), but remember the middleware cannot be applied to all resolvers, that said apply it only to top level resolvers otherwise you end up validating the same conditions multiple times.
 
-* Support user custom functions.
+* Support custom user functions.
 
 * More real world examples and implementations
 
