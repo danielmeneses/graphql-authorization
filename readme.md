@@ -151,7 +151,7 @@ The `$dropIf` function allows you to make a previous validation over a node, i.e
 
 For the given example the `$dropIf` validation only applies to role `customer` and the verification `$neq: {"$out.author.$in.id": "userClaims.uid"}`. `$neq` is an operation and it means `not equal`, so if the field value with the relative path (relative to `books`, where the rule is set) `$out.author.$in.id` doesn't match `userClaims.uid`, the authorization will be dropped. As you might already guest `userClaims.uid` is a path to the value of the prop `uid`, in the example the value is `1234`. This way you can interact with your rules from outside since `userParams` can have different values on each `Authorization.validate` call.
 
-***Note:*** The value to match match must be either a `string`, `number` or `boolean`, objects/arrays will not be matched.
+***Note:*** The value to match must be either a `string`, `number` or `boolean`, objects/arrays will not be matched.
 
 ### Authorization object specifications
 
