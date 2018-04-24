@@ -156,7 +156,7 @@ For the given example the `$dropIf` validation only applies to role `customer` a
 * `new Authorization(rulesString)`
 String with all the rules. The constructor will call `Authorization.setRules` that parses the string into AST and the rules tree is generated. `new Authorization` **should be executed only once at server start and the resulting object used across requests**.
 
-* Function `Authorization.setPolicy(Authorization.DROP|Authorization.ACCEPT)`
+* Function `Authorization.setPolicy(Authorization.policy.DROP|Authorization.policy.ACCEPT)`
 The `setPolicy` function sets the default policy for the fields that are not described in the rules query. So if this policy is set to `DROP` any field not described in the rules query will be denied access. It will be accepted in case `ACCEPT` policy is selected.
 
 * Function `Authorization.validate(queryASTorString, userParams)`
