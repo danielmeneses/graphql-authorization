@@ -151,8 +151,6 @@ The `$dropIf` function allows you to make a previous validation over a node, i.e
 
 For the given example the `$dropIf` validation only applies to role `customer` and the verification `$neq: {"$out.author.$in.id": "userClaims.uid"}`. `$neq` is an operation and it means `not equal`, so if the field value with the relative path (relative to `books`, where the rule is set) `$out.author.$in.id` doesn't match `userClaims.uid`, the authorization will be dropped. As you might already guest `userClaims.uid` is a path to the value of the prop `uid`, in the example the value is `1234`. This way you can interact with your rules from outside since `userParams` can have different values on each `Authorization.validate` call.
 
-***Note:*** The value to match must either be a `string`, `number` or `boolean`, objects/arrays will not be matched.
-
 ### Authorization object specifications
 
 * `new Authorization(rulesString)`
@@ -186,7 +184,9 @@ The `setPolicy` function sets the default policy for the fields that are not des
 The path to the value to be matched must be relative to the node where the rule is attached and it follows the pattern `$out.outputFieldName.$in.inputFieldName...`. `$out` means that the next field is output type and `$in` means that the next field is input type. The path definition has to be this way because it's possible to have a field with the same name for `input` and `output`.
 
 The $peration can be either `$eq` (equal to), `$neq` (not equal to), `$gt` (greater than), `$gte` (greater than or equal to), `$lt` (less than) and `$lte` (less than or equal to).
-***Note:*** the value to match must be either of the type `string` or `number`, it doesn't apply to arrays or objects.
+
+***Note:*** The value to match must either a `string`, `number` or `boolean`, objects/arrays will not be matched.
+
 
 
 ### Next steps
