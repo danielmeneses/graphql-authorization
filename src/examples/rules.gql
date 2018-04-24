@@ -1,0 +1,59 @@
+const dropIf = JSON.stringify({
+  $dropIf: [
+    {
+      roles: ["customer"],
+      $neq: {"$out.author.$in.id": "userClaims.uid"}
+    }
+  ]
+});
+const rules = `
+  #{"DROP": ["*"], "ACCEPT": ["customer", "manager"]}
+  query {
+    #${dropIf}
+    books(
+      filter: {
+        id: null
+        #{"DROP": ["customer"]}
+        author: null
+        enum: null
+      }
+    ) {
+      id
+      releaseDate
+      author(id: null){
+        name
+        age
+      }
+    }
+  }
+`;
+module.exports = rules;
+
+/**
+  #{"DROP": ["*"], "ACCEPT": ["admin"]}
+  query {
+    #{"ACCEPT": ["customer"], "$dropIf": [{"roles": "customer", "$neq": {"$out.author.$in.id": "userClaims.uid"}}]}
+    books(
+      filter: {
+        #{"DROP": ["customer"]}
+        id: null
+        author: null
+      }
+    ) {
+      id
+      releaseDate
+      #{"DROP": ["customer"]}
+      author(id: null){
+        name
+        #{"ACCEPT": ["manager"]}
+        age
+      }
+    }
+
+    #{"ACCEPT": ["manager"]}
+    authors {
+      id
+      name
+    }
+  }
+*/
