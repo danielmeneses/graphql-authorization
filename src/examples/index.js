@@ -11,7 +11,7 @@ const typeDefs = `
       date
     }
     input Filter {
-        id: ID
+        id: [ID]
         author: ID
         enum: [FieldName]
     }
@@ -30,6 +30,15 @@ const typeDefs = `
 `;
 
 const auth = new Authorization(rules);
+auth.setCustomValidation((path, policies, userParams, value) => {
+  // console.log(path);
+  // console.log(policies);
+  // console.log(userParams);
+  // console.log(value);
+  // console.log('#######################################');
+  if (path.match(/query\.\$out\.books\.\$in\.filter\.\$in\.id.\d+/))
+    return [`USER FUNCTION: User can't access ${path}`];
+});
 auth.debugMode = true;
 
 const resolvers = {

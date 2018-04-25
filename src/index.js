@@ -19,6 +19,7 @@ export class Authorization {
     this.policies = DEFAULT_POLICIES;
     this.defaultPolicy = 'DROP';
     this.debugMode = false;
+    this.userFunction = null;
     this.setRules(rulesAsGraphqlQuery);
   }
 
@@ -35,6 +36,10 @@ export class Authorization {
 
     this.defaultPolicy = policy;
     this.policies = { [policy]: ['*'] };
+  }
+
+  setCustomValidation(func) {
+    if (typeof func === 'function') this.userFunction = func;
   }
 
   /**
@@ -90,7 +95,8 @@ export class Authorization {
       params,
       this.parsedRulesQuery,
       this.defaultPolicy,
-      variables
+      variables,
+      this.userFunction
     );
     // console.timeEnd('validate');
     if (this.debugMode === false && !errors.isAllowed)

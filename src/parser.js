@@ -90,8 +90,6 @@ export const parseRulesOrQuery = ({
         case 'ListValue':
         case 'ObjectField': // inner input type
         case 'ObjectValue':
-        case 'StringValue':
-        case 'IntValue':
           if (kind === 'ObjectValue') {
             recurse(astObj, `${path}.fields`, ownPath, policies);
             break;
@@ -176,12 +174,14 @@ export const parseRulesOrQuery = ({
                   switch (prop[e].kind) {
                     case 'StringValue':
                     case 'IntValue':
-                      _set(finalObj, `${ownPath}.${e}.${INPUT_KEY}`, {
-                        [INPUT_VAL_KEY]:
-                          prop[e].kind === 'StringValue'
-                            ? prop[e].value
-                            : parseInt(prop[e].value, 10)
-                      });
+                    case 'BooleanValue':
+                      _set(
+                        finalObj,
+                        `${ownPath}.${e}.${INPUT_KEY}.${INPUT_VAL_KEY}`,
+                        prop[e].kind === 'IntValue'
+                          ? parseInt(prop[e].value, 10)
+                          : prop[e].value
+                      );
                       break;
                     default:
                       recurse(

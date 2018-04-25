@@ -151,6 +151,27 @@ The `$dropIf` function allows you to make a previous validation over a node, i.e
 
 For the given example the `$dropIf` validation only applies to role `customer` and the verification `$neq: {"$out.author.$in.id": "userClaims.uid"}`. `$neq` is an operation and it means `not equal`, so if the field value with the relative path (relative to `books`, where the rule is set) `$out.author.$in.id` doesn't match `userClaims.uid`, the authorization will be dropped. As you might already guest `userClaims.uid` is a path to the value of the prop `uid`, in the example the value is `1234`. This way you can interact with your rules from outside since `userParams` can have different values on each `Authorization.validate` call.
 
+### User custom function
+
+You can define your own function to perform validations per node. Use `Authorization.setCustomValidation` to achieve that.
+
+```js
+...
+
+const auth = new Authorization(rules);
+auth.setCustomValidation((path, policies, userParams, value) => {
+
+  // Drop access based on a specific field access
+  if (path.match(/query\.\$out\.books\.\$in\.filter\.\$in\.id.\d+/))
+    return [`USER FUNCTION: User can't access ${path}`];
+});
+```
+
+When the function is executed 4 arguments are passed to it, `path`, `policies`, `userParams`, `value`. `policies` will be `null` if the element is an array position.  `value` only has value if the element is a leaf otherwise `null`is passed.
+
+The function must return an array of strings (error messages).
+
+
 ### Authorization object specifications
 
 * `new Authorization(rulesString)`
@@ -193,7 +214,7 @@ The $peration can be either `$eq` (equal to), `$neq` (not equal to), `$gt` (grea
 
 * Build a middleware. I've found one that works ok ([graphql-middleware](https://github.com/graphcool/graphql-middleware)), but remember the middleware cannot be applied to all resolvers, that said apply it only to top level resolvers otherwise you end up validating the same conditions multiple times.
 
-* Support custom user functions.
+* Support custom user functions. ✔️
 
 * More real world examples and implementations
 
