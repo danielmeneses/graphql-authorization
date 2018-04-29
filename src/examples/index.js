@@ -22,7 +22,7 @@ const typeDefs = `
     type Book {
         id: ID!
         releaseDate: String
-        author(id: [Int]): Author
+        author(id: Int): Author
     }
     type Query {
         books(filter: Filter): [Book]

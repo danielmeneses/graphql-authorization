@@ -26,7 +26,6 @@ const getVariablesTree = obj => {
   const finalTree = {};
   const recurse = (obj, objectPath, treePath) => {
     if (treePath !== '') treePath = treePath + '.';
-    if (objectPath !== '') objectPath = objectPath + '';
 
     const _obj = _get(obj, objectPath);
     if (isObj(_obj) || isArray(obj))
