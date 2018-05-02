@@ -31,11 +31,6 @@ const typeDefs = `
 
 const auth = new Authorization(rules);
 auth.setCustomValidation((path, policies, userParams, value) => {
-  // console.log(path);
-  // console.log(policies);
-  // console.log(userParams);
-  // console.log(value);
-  // console.log('#######################################');
   if (path.match(/query\.\$out\.books\.\$in\.filter\.\$in\.id.\d+/))
     return [`USER FUNCTION: User can't access ${path}`];
 });
@@ -77,21 +72,8 @@ server.listen(3000, '0.0.0.0', () => {
 server.use(
   '/graphql',
   bodyParser.json(),
-  //   graphqlExpress({
-  //     schema: schemas
-  //   })
-  //   function(req, res, next){
-  //       graphqlExpress({
-  //         schema: schemas
-  //       });
-  //     //   return data;
-  //     next();
-  //   }
-  //   ,
   graphqlExpress({
     schema
-    // validationRules: function(validation) {
-    // }
   })
 );
 server.get('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));

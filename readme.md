@@ -8,13 +8,64 @@ Graphql authorization system that allows you to describe the rules on a graphql 
 
 Create a solid authorization system for Graphql, capable of handling complex authorization logic. Due to the nature of Graphql is very hard to come up with an approach that handles authorization smoothly. Normally all authorization validation is implemented per resolver, but that might get very hard to maintain and definitely complex to implement.
 
-So in this project, I take a very different approach to the authorization topic in the Graphql ecosystem. It's, in fact, a crazy/weird solution that I present here, but more on that in the next sections.
-This might not be suitable to all use-cases, but give it a try and then take your own conclusions.
+So in this project I take a very different approach to the authorization/permissions topic in the Graphql ecosystem.
 
 ### Install
 
 ```bash
 npm i graphql-authorization --save-prod
+```
+
+### Example - validation in a resolver
+
+Quick usage example in a resolver. Just pass the `info` arg to `Authorization.validate` function.
+[Complete example](https://github.com/danielmeneses/graphql-authorization/blob/master/src/examples/index.js)
+
+```js
+import { Authorization } from 'graphql-authorization';
+
+// Authorization rules
+const rules = `
+  #{"DROP": ["*"], "ACCEPT": ["admin"]}
+  query {
+    #{"ACCEPT": ["customer"]}
+    books (
+      #{"DROP": ["customer"]}
+      id: null
+      title: null
+    ){
+      #{"DROP": ["customer"]}
+      id
+      releaseDate
+      title
+      volume
+    }
+  }
+`;
+
+const auth = new Authorization(rules);
+// set debug mode - should be on for DEV only
+auth.debugMode = true;
+// set default policy
+auth.setPolicy(Authorization.policy.DROP);
+
+const resolvers = {
+  Query: {
+    books(_, args, context, info) {
+      auth.setPolicy(Authorization.policy.DROP);
+      const results = auth.validate(info, {
+        userClaims: {
+          roles: ['customer']
+        }
+      });
+      if (!results.isAllowed) return new Error(results.message);
+
+      return myImportantData;
+    }
+  }
+};
+
+// ........
 ```
 
 ### Example: Rules / Roles / Resources definitions
@@ -68,7 +119,7 @@ const results = auth.validate(incommingQuery, {
 /* Output:
 {
   isAllowed: false,
-  message: 'User with roles [customer] are not authorized to access resources: query.$out.books.$in.id; query.$out.books.$out.id.'
+  message: 'User with roles [customer] is not authorized to access resources: query.$out.books.$in.id; query.$out.books.$out.id.'
 }
 */
 ```
@@ -77,18 +128,17 @@ So in the example above the query is not authorize because the role `customer` i
 
 ####  Example breakdown
 
-In the example the rules are set by adding comments to an ***example query***. Defining rules in an example query might seem weird, but it is indeed very powerful. This way you know exactly where to look for and you can easily identify the actions, resources, rules, and roles of your authorization system. Basically, you describe how the authorization should work instead of decoupling every existing instance in a authorization system.
+In the example the rules are set by adding comments to an ***example query***. Defining rules in an example query might seem weird, but it's also very powerful. This way you know exactly where to look for and you can easily identify the actions, resources, rules, and roles of your authorization system. Basically, you describe how the authorization should work instead of decoupling every existing instance in an authorization system.
 
-First of all, the values provided to any field in the rules don't really matter, but we've to set some value so that it is a valid graphql query. In the example I've set `id` and `title` as `null` but it could be a string or a number.
-Now, if you followed the example the first rule is `{"DROP": ["*"], "ACCEPT": ["admin"]}`. This means that all child nodes will inherit this rules until some other rule overwrites one of these 2. To be clear `"DROP": ["*"]` drops access to any field to all users and `"ACCEPT": ["admin"]` will allow role `admin` to access any field inside `query` node. The second rule is `{"ACCEPT": ["customer"]}` and it applies to `books` node, so all child nodes will be affected and have this rule as well, so role `customer`, at this point, has access to all props inside `books`. The last 2 remaining rules `{"DROP": ["customer"]}` basically drop the access to both fields `id`, input and output. As you might already guess, ultimately, the validation is only performed on the leaf level.
+First of all, the values provided to any field in the rules don't really matter, but we've to set some value so that it is a valid graphql query. In the example I've set `id` and `title` as `null` but it could be a string or a number. The first rule I've set is `{"DROP": ["*"], "ACCEPT": ["admin"]}`. This means that all child nodes will inherit this rules until some other rule overwrites them. To be clear `"DROP": ["*"]` drops access to any field and to all users. `"ACCEPT": ["admin"]` allows the role `admin` to access any field inside the `query` node. The second rule is in the example is `{"ACCEPT": ["customer"]}` and it's applicable to `books` node, so all child nodes will be affected and inherit these rules, meaning that the role `customer`, at this point, has access to all fields inside `books` node. The last 2 remaining rules are `{"DROP": ["customer"]}` and basically they will ensure that the role `customer` won't be able to access both fields `id` (input and output). As you might already guess, ultimately, all permissions validations will only be performed on the leaf level.
 
 
-**Notes:** It's important to note that all rules must be right before (previous line) the node we intend to affect, this is mandatory. Also, **all rules must be valid JSON** otherwise it will result in a parse error.
-Last note, **the rules query must be a valid Graphql query** because it will be parsed into an AST and used from the lib from there.
+**Notes:** It's important to note that all rules must be placed immediately before (previous line) the node/field we intend to target, this is mandatory. Also, **all rules must be valid JSON** otherwise it will result in a parse error.
+Last note, **the rules query must be a valid Graphql query** because the library will parse it into an AST and used by the lib from there to produce a rules tree. The rules tree is what this lib uses to validate permissions based on the set rules.
 
 ### $dropIf function
 
-This lib also has a function called `$dropIf` and as the name tells it will drop access to the specified roles if some condition is met. This function allows you to enforce the user to pass specific values in order to obtain a certain resource and this can certainly help when you need to filter just the content that user is allowed to get back. So in this example will only allow the user to access the `books` resource if he is the author.
+This lib also provides a function called `$dropIf`, the name is very self-explanatory, the intention when using this function is to drop access, to the specified roles, if some condition is met. So it you can enforce the user to pass specific values in order to obtain a certain resource and this can certainly help when you need to filter the content that a user is allowed to retrieve. In the following example We only allow the user to access the `books` resource if he is the author.
 
 ```js
 const dropIf = JSON.stringify({
@@ -147,13 +197,14 @@ const results = auth.validate(incommingQuery, {
 */
 ```
 
-The `$dropIf` function allows you to make a previous validation over a node, i.e., let's say, for or example that the incoming value for field `author.id` is different than an expected value, in this case, the access will be dropped.
+The `$dropIf` function performs a previous validation over a node, i.e., let's say that, the incoming value for field `author.id` is different than the expected value, in this case, the user `customer` will not have permission.
 
-For the given example the `$dropIf` validation only applies to role `customer` and the verification `$neq: {"$out.author.$in.id": "userClaims.uid"}`. `$neq` is an operation and it means `not equal`, so if the field value with the relative path (relative to `books`, where the rule is set) `$out.author.$in.id` doesn't match `userClaims.uid`, the authorization will be dropped. As you might already guest `userClaims.uid` is a path to the value of the prop `uid`, in the example the value is `1234`. This way you can interact with your rules from outside since `userParams` can have different values on each `Authorization.validate` call.
+For the given example the `$dropIf` function validation is only applicable to the role `customer` and it's to evaluate the expression `$neq: {"$out.author.$in.id": "userClaims.uid"}`. `$neq` is an operation and it stands for `not equal`, so if the field value with the relative path (relative to `books`, where the rule is set) `$out.author.$in.id` doesn't match `userClaims.uid`, the authorization will be dropped. As you might already guess `userClaims.uid` is the path to the value of the prop `uid`. In the example the value is `1234`.
+
 
 ### User custom function
 
-You can define your own function to perform validations per node. Use `Authorization.setCustomValidation` to achieve that.
+You can define your own function to perform validations, use `Authorization.setCustomValidation` function to achieve that. Keep in mind that this function will be invoked per each node in the rules tree, so for performance reasons make sure you're targeting only the path(s) you want to target.
 
 ```js
 ...
@@ -161,15 +212,16 @@ You can define your own function to perform validations per node. Use `Authoriza
 const auth = new Authorization(rules);
 auth.setCustomValidation((path, policies, userParams, value) => {
 
-  // Drop access based on a specific field access
-  if (path.match(/query\.\$out\.books\.\$in\.filter\.\$in\.id.\d+/))
+  // Drop access if user is pasing an array of ids
+  if (path === 'query.$out.books.$in.filter.$in.id.0')
     return [`USER FUNCTION: User can't access ${path}`];
 });
 ```
 
-When the function is executed 4 arguments are passed to it, `path`, `policies`, `userParams`, `value`. `policies` will be `null` if the element is an array position.  `value` only has value if the element is a leaf otherwise `null`is passed.
+When the function is executed 4 arguments are passed to it, `path`, `policies`, `userParams` and `value`.
 
-The function must return an array of strings (error messages).
+***Notes:*** The `policies` arg will be `null` if the element is an array position and `value` arg only gets a value if the element is a leaf otherwise it will be `null`.
+The function must return an array of strings (error messages) if you wish to flag errors.
 
 
 ### Authorization object specifications

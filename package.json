@@ -1,6 +1,6 @@
 {
   "name": "graphql-authorization",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Graphql authorization system that allows you to describe the rules on a graphql query.",
   "main": "lib/main",
   "module": "lib/module",
