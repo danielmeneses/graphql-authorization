@@ -155,7 +155,8 @@ export const parseRulesOrQuery = ({
               );
             } else if (
               obj.value.kind === 'StringValue' ||
-              obj.value.kind === 'BooleanValue'
+              obj.value.kind === 'BooleanValue' ||
+              obj.value.kind === 'EnumValue'
             ) {
               _set(finalObj, `${ownPath}.${INPUT_VAL_KEY}`, obj.value.value);
             }
@@ -174,6 +175,7 @@ export const parseRulesOrQuery = ({
                     case 'StringValue':
                     case 'IntValue':
                     case 'BooleanValue':
+                    case 'EnumValue':
                       _set(
                         finalObj,
                         `${ownPath}.${e}.${INPUT_KEY}.${INPUT_VAL_KEY}`,
