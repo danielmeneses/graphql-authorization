@@ -22,26 +22,32 @@ const isArray = obj => {
   return obj && typeof obj === 'object' && obj.hasOwnProperty('length');
 };
 
+export const isLeafVal = val => {
+  return (
+    typeof val === 'string' ||
+    typeof val === 'number' ||
+    typeof val === 'boolean' ||
+    val === null ||
+    val === undefined
+  );
+};
+
 const getVariablesTree = obj => {
   const finalTree = {};
   const recurse = (obj, objectPath, treePath) => {
-    if (treePath !== '') treePath = treePath + '.';
+    if (treePath !== '') treePath += '.';
 
     const _obj = _get(obj, objectPath);
+    if (isArray(_obj)) _set(finalTree, `${treePath}${LIST_KEY}`, true);
     if (isObj(_obj) || isArray(obj))
       for (let key in _obj)
         if (obj.hasOwnProperty(key)) {
           const ownPath = isArray(obj)
-            ? `${treePath}${key}.${INPUT_KEY}`
+            ? `${treePath}${key}`
             : `${treePath}${INPUT_KEY}.${key}`;
           _set(finalTree, ownPath, {});
-          const val = _get(obj, `${objectPath}.${key}`, null);
-          if (
-            typeof val === 'string' ||
-            typeof val === 'number' ||
-            typeof val === 'boolean' ||
-            !val
-          )
+          const val = _get(obj, key, null);
+          if (isLeafVal(val))
             _set(finalTree, `${ownPath}.${INPUT_VAL_KEY}`, val);
           else if (_get(obj, `${objectPath}.${key}`, null))
             recurse(obj, `${objectPath}.${key}`, ownPath);
@@ -95,12 +101,7 @@ export const parseRulesOrQuery = ({
           } else if (_get(obj, 'value.kind', null) === 'Variable') {
             const name = obj.value.name.value;
             const val = variables[name];
-            if (
-              typeof val === 'string' ||
-              typeof val === 'number' ||
-              typeof val === 'boolean' ||
-              !val
-            )
+            if (isLeafVal(val))
               _set(
                 finalObj,
                 `${ownPath}.${INPUT_KEY}.${obj.name.value}.${INPUT_VAL_KEY}`,
@@ -170,7 +171,9 @@ export const parseRulesOrQuery = ({
                 lookupList[i] === 'value.values' ||
                 lookupList[i] === 'values'
               ) {
-                for (let e = 0; e < prop.length; e++)
+                _set(finalObj, `${ownPath}.${LIST_KEY}`, true);
+                for (let e = 0; e < prop.length; e++) {
+                  if (parseConfigs) _set(finalObj, `${ownPath}.${e}`, policies);
                   switch (prop[e].kind) {
                     case 'StringValue':
                     case 'IntValue':
@@ -178,7 +181,7 @@ export const parseRulesOrQuery = ({
                     case 'EnumValue':
                       _set(
                         finalObj,
-                        `${ownPath}.${e}.${INPUT_KEY}.${INPUT_VAL_KEY}`,
+                        `${ownPath}.${e}.${INPUT_VAL_KEY}`,
                         prop[e].kind === 'IntValue'
                           ? parseInt(prop[e].value, 10)
                           : prop[e].value
@@ -192,6 +195,7 @@ export const parseRulesOrQuery = ({
                         policies
                       );
                   }
+                }
 
                 break;
               } else {

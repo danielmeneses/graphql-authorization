@@ -220,8 +220,8 @@ auth.setCustomValidation((path, policies, userParams, value) => {
 
 When the function is executed 4 arguments are passed to it, `path`, `policies`, `userParams` and `value`.
 
-***Notes:*** The `policies` arg will be `null` if the element is an array position and `value` arg only gets a value if the element is a leaf otherwise it will be `null`.
-The function must return an array of strings (error messages) if you wish to flag errors.
+***Notes:*** The `value` argument only has a value if the element is a leaf otherwise it will be `null`.
+The function must return an array of strings (error messages) if you wish to flag errors otherwise you should not return any value.
 
 
 ### Authorization object specifications

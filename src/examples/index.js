@@ -22,7 +22,7 @@ const typeDefs = `
     type Book {
         id: ID!
         releaseDate: String
-        author(id: Int): Author
+        author(id: [Int]): Author
     }
     type Query {
         books(filter: Filter): [Book]
@@ -31,8 +31,9 @@ const typeDefs = `
 
 const auth = new Authorization(rules);
 auth.setCustomValidation((path, policies, userParams, value) => {
-  if (path.match(/query\.\$out\.books\.\$in\.filter\.\$in\.id.\d+/))
-    return [`USER FUNCTION: User can't access ${path}`];
+  // if (path.match(/query\.\$out\.books\.\$in\.filter\.\$in\.id.\d+/))
+  //   return [`USER FUNCTION: User can't access ${path}`];
+  console.log(value, path, policies);
 });
 auth.debugMode = true;
 

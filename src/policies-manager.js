@@ -1,13 +1,15 @@
 import objectPath from 'object-path';
 import {
   parseRulesOrQuery,
+  isLeafVal,
   AST_PATH_KEY,
   FIELD_KEY,
   INPUT_KEY,
   PARAMS_KEY,
   POLICIES_KEY,
   ACTION_KEY,
-  INPUT_VAL_KEY
+  INPUT_VAL_KEY,
+  LIST_KEY
 } from './parser';
 
 const { get: _get } = objectPath;
@@ -24,14 +26,6 @@ const hasPolicy = (name, value, policies) => {
     policies.hasOwnProperty(name) &&
     policies[name].indexOf(val.roles) > -1;
   return has;
-};
-
-const isLeafValue = value => {
-  return (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  );
 };
 
 const executeFunctions = (
@@ -257,6 +251,7 @@ export const validatePolicies = (
         case AST_PATH_KEY:
         case INPUT_VAL_KEY:
         case ACTION_KEY:
+        case LIST_KEY:
           break;
         case INPUT_KEY:
         case FIELD_KEY:
@@ -267,10 +262,11 @@ export const validatePolicies = (
           if (!obj[key]) return;
           _fakePath = `${_fakePath}${
             obj[key][ACTION_KEY] ? obj[key][ACTION_KEY] : key
-          }`.replace(/\.\d+\./, '.');
+          }`.replace(/\.\d+/, '');
           functions = _get(rules, `${_fakePath}.${PARAMS_KEY}`, null);
 
-          isLeaf = !obj[key][INPUT_KEY] && !obj[key][FIELD_KEY];
+          isLeaf =
+            !obj[key][INPUT_KEY] && !obj[key][FIELD_KEY] && !obj[key][LIST_KEY];
           // validate access only over leafs
           if (isLeaf) {
             policies = _get(rules, `${_fakePath}.${POLICIES_KEY}`, null);
@@ -284,19 +280,15 @@ export const validatePolicies = (
             if (canAccess) canAccess = canAccessResource(policies, params);
             if (!canAccess) errors.push(`${pathPrefix}${key}`);
           }
-          if (typeof userFunction === 'function') {
+          if (typeof userFunction === 'function' && !obj[key][LIST_KEY]) {
             policies = _get(rules, `${_fakePath}.${POLICIES_KEY}`, null);
 
-            userFuncVal = _get(
-              obj,
-              `${key}.${INPUT_KEY}.${INPUT_VAL_KEY}`,
-              null
-            );
+            userFuncVal = _get(obj, `${key}.${INPUT_VAL_KEY}`, null);
             userErrors = userFunction(
               `${pathPrefix}${key}`,
               policies,
               params,
-              isLeafValue(userFuncVal) ? userFuncVal : obj[key][INPUT_VAL_KEY]
+              isLeafVal(userFuncVal) ? userFuncVal : obj[key][INPUT_VAL_KEY]
             );
             if (typeof userErrors === 'object' && userErrors.length)
               fnErrors.push(...userErrors);
